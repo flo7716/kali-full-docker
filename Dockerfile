@@ -21,7 +21,7 @@ RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh && \
     chsh -s /usr/bin/zsh
 
 # SecLists
-RUN git clone https://github.com/danielmiessler/SecLists /usr/share/seclists
+RUN apt install seclists -y
 
 # NodeJS LTS 18
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
