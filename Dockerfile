@@ -1,78 +1,61 @@
-FROM kalilinux/kali-rolling:latest
+FROM kalilinux/kali-rolling
 
-LABEL maintainer="info@xaviertorello.cat"
-LABEL author="Xavi Torelló"
-
+LABEL maintainer="security-lab"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=xterm-256color
 
-# Base install
-RUN apt-get update -y && \
-    apt-get install -y \
-        software-properties-common \
-        kali-linux-headless \
-        curl \
-        wget \
-        ca-certificates && \
-    echo 'VERSION_CODENAME=kali-rolling' >> /etc/os-release
+# Base system
+RUN apt-get update && apt-get install -y \
+    kali-linux-default \
+    kali-tools-top10 \
+    kali-tools-web \
+    kali-tools-wireless \
+    kali-tools-exploitation \
+    kali-tools-fuzzing \
+    kali-tools-forensics \
+    kali-tools-passwords \
+    kali-tools-crypto-stego \
+    kali-tools-sniffing-spoofing \
+    kali-tools-database \
+    kali-tools-reversing \
+    kali-tools-vulnerability \
+    curl wget git unzip xz-utils vim tmux zsh less \
+    man-db bash-completion apt-transport-https \
+    net-tools iputils-ping iputils-tracepath \
+    tor proxychains4 \
+    locate \
+    && apt-get clean
 
-# Add NodeJS repo
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+# Install NodeJS (LTS 18)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && npm install -g yarn && \
+    apt-get clean
 
-# Install system tools
-RUN apt-get install -y \
-    git colordiff colortail unzip vim tmux xterm zsh curl telnet \
-    strace ltrace tmate less build-essential \
-    python3 python3-venv python3-setuptools python3-pip \
-    tor proxychains proxychains4 zstd net-tools bash-completion \
-    iputils-tracepath nodejs npm yarnpkg \
-    virtualenvwrapper \
-    locate
-
-# Oh-my-git
-RUN git clone https://github.com/arialdomartini/oh-my-git.git /root/.oh-my-git && \
-    echo "source /root/.oh-my-git/prompt.sh" >> /etc/profile
+# Oh-my-zsh
+RUN apt-get install -y zsh && \
+    chsh -s /usr/bin/zsh && \
+    git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh && \
+    cp /root/.oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc
 
 # SecLists
 RUN git clone https://github.com/danielmiessler/SecLists /usr/share/seclists
 
-# w3af (ATTENTION: sans pip → installation partielle)
-RUN apt-get install -y \
-        libssl-dev libxml2-dev libxslt1-dev zlib1g-dev \
-        python3-pybloomfiltermmap && \
-    git clone https://github.com/andresriancho/w3af.git /opt/w3af && \
-    echo 'export PATH=/opt/w3af:$PATH' >> /etc/profile
-
-# ngrok
-RUN curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip \
-    | gunzip - > /usr/bin/ngrok && chmod +x /usr/bin/ngrok
-
-# code-server
+# Code-Server
 RUN mkdir -p /opt/code-server && \
     curl -Ls https://api.github.com/repos/coder/code-server/releases/latest \
     | grep "browser_download_url.*linux-amd64" \
     | cut -d ":" -f 2,3 | tr -d \" \
     | xargs curl -Ls \
     | tar xz -C /opt/code-server --strip 1 && \
-    echo "export PATH=/opt/code-server:$PATH" >> /etc/profile
+    ln -s /opt/code-server/code-server /usr/bin/code-server
 
-# virtualenvwrapper config (sans pip)
-RUN echo 'export WORKON_HOME=$HOME/.virtualenvs' >> /etc/profile && \
-    echo 'export PROJECT_HOME=$HOME/projects' >> /etc/profile && \
-    mkdir -p /root/projects && \
-    echo 'source /usr/share/virtualenvwrapper/virtualenvwrapper.sh' >> /etc/profile
+# Proxychains config (random)
+RUN sed -i 's/^strict_chain/#strict_chain/g; s/^#random_chain/random_chain/' /etc/proxychains4.conf
 
-# Tor refresh every 5 requests
-RUN echo "MaxCircuitDirtiness 10" >> /etc/tor/torrc && \
-    update-rc.d tor enable
+# Tor circuit refresh
+RUN echo "MaxCircuitDirtiness 10" >> /etc/tor/torrc
 
-# Proxychains config
-RUN sed -i 's/^strict_chain/#strict_chain/g; s/^#random_chain/random_chain/g' /etc/proxychains.conf && \
-    sed -i 's/^strict_chain/#strict_chain/g; s/^round_robin_chain/round_robin_chain/g' /etc/proxychains4.conf
+# Update DB
+RUN updatedb
 
-# Update DB + clean
-RUN updatedb && apt-get autoremove -y && apt-get clean
-
-
-CMD ["/bin/bash", "--init-file", "/etc/profile"]
-# End of Dockerfile
+CMD ["/bin/zsh"]
