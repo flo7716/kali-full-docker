@@ -23,19 +23,6 @@ RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh && \
 # SecLists
 RUN apt install seclists -y
 
-# NodeJS LTS 18
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && npm install -g yarn && apt-get clean
-
-# Code-Server (VSCode Web)
-RUN mkdir -p /opt/code-server && \
-    curl -Ls https://api.github.com/repos/coder/code-server/releases/latest \
-    | grep "browser_download_url.*linux-amd64" \
-    | cut -d ":" -f 2,3 | tr -d \" \
-    | xargs curl -Ls \
-    | tar xz -C /opt/code-server --strip 1 && \
-    ln -s /opt/code-server/bin/code-server /usr/bin/code-server
-
 # Proxychains config
 RUN sed -i 's/^strict_chain/#strict_chain/; s/^#random_chain/random_chain/' /etc/proxychains4.conf
 
