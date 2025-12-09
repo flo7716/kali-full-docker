@@ -73,11 +73,6 @@ RUN sed -i 's/^strict_chain/#strict_chain/g; s/^#random_chain/random_chain/g' /e
 # Update DB + clean
 RUN updatedb && apt-get autoremove -y && apt-get clean
 
-# Welcome message
-RUN echo "echo \"Kali full container!  
-- If you need proxychains over Tor, start Tor with:  
-    service tor start  
-\"" >> /etc/profile
 
 CMD ["/bin/bash", "--init-file", "/etc/profile"]
 # End of Dockerfile
